@@ -1,0 +1,175 @@
+# useTooltipTrigger
+
+## 简介
+
+为工具提示触发器提供行为和可访问性实现，例如，当聚焦或悬停时显示描述的按钮。
+
+```yml
+install	yarn add react-aria
+version	3.22.0
+usage	import {useTooltipTrigger, useTooltip} from 'react-aria'
+
+```
+
+## API 
+
+```jsx
+useTooltipTrigger(
+  props: TooltipTriggerProps,
+  state: TooltipTriggerState,
+  ref: RefObject<FocusableElement>
+): TooltipTriggerAria
+useTooltip(props: AriaTooltipProps, state?: TooltipTriggerState): TooltipAria
+```
+
+## 功能
+
+HTML `title`属性可以用来创建一个工具提示，但它不能被样式化。useTooltipTrigger和useTooltip有助于建立完全无障碍的工具提示，可以根据需要进行样式设计。
+
+### 功能特点
+
+- 键盘焦点管理和跨浏览器规范化
+- 悬停管理和跨浏览器规范化
+- 支持屏幕阅读器的标签（aria-describedby）。
+- 通过ARIA以工具提示的形式暴露给辅助技术
+- 匹配本地的工具提示行为，在第一个工具提示的悬停上有延迟，在随后的工具提示上没有延迟。
+
+### 功能拆解
+
+一个工具提示由两部分组成：触发元素和工具提示本身。用户可以通过悬停或聚焦触发器来显示工具提示。
+
+useTooltipTrigger返回要传播到其目标触发器和工具提示的Props。
+
+| Name        | Type         |         描述 |
+| :------------ | :---------: | ----------: |
+| triggerProps        |    react支持的DOM属性  & PressProps & HoverProps & FocusEvents   | 宿主触发ele |
+| tooltipProps     |     react支持的DOM属性     |    覆盖类ele |
+
+
+useTooltip返回将被传播到工具提示的Props。
+
+| Name        | Type         |         描述 |
+| :------------ | :---------: | ----------: |
+| tooltipProps |  react支持的DOM属性     |   小提示工具ele |
+
+工具提示状态由@react-stately/tooltip中的useTooltipTriggerState钩子管理。该状态对象应作为一个选项传递给useTooltipTrigger和useTooltip。
+
+## 示例
+
+这个例子实现了一个Tooltip，在其目标旁边的绝对位置显示。useTooltip钩子将正确的ARIA属性应用到工具提示上，useTooltipTrigger将其与触发器元素相关。
+
+该例子的两个实例被呈现出来，以演示悬停时的延迟行为。如果你悬停在第一个按钮上，工具提示将在延迟后显示。
+悬停在第二个按钮上会立即显示工具提示。如果你在悬停另一个元素之前等待延迟，延迟会重新开始。
+
+```jsx
+import {useTooltipTriggerState} from 'react-stately';
+import {mergeProps, useTooltip, useTooltipTrigger} from 'react-aria';
+
+function Tooltip({ state, ...props }) {
+  let { tooltipProps } = useTooltip(props, state);
+
+  return (
+    <span
+      style={{
+        position: 'absolute',
+        left: '5px',
+        top: '100%',
+        maxWidth: 150,
+        marginTop: '10px',
+        backgroundColor: 'white',
+        color: 'black',
+        padding: '5px',
+        border: '1px solid gray'
+      }}
+      {...mergeProps(props, tooltipProps)}
+    >
+      {props.children}
+    </span>
+  );
+}
+
+function TooltipButton(props) {
+  let state = useTooltipTriggerState(props);
+  let ref = React.useRef();
+
+  // Get props for the trigger and its tooltip
+  let { triggerProps, tooltipProps } = useTooltipTrigger(props, state, ref);
+
+  return (
+    <span style={{ position: 'relative' }}>
+      <button
+        ref={ref}
+        {...triggerProps}
+        style={{ fontSize: 18 }}
+        onClick={() => alert('Pressed button')}
+      >
+        {props.children}
+      </button>
+      {state.isOpen &&
+        <Tooltip state={state} {...tooltipProps}>{props.tooltip}</Tooltip>}
+    </span>
+  );
+}
+
+<TooltipButton tooltip="Edit">✏️</TooltipButton>
+<TooltipButton tooltip="Delete">🚮</TooltipButton>
+
+```
+
+## 何时使用
+
+下面的例子展示了如何使用上面的例子中创建的TooltipButton组件。
+
+### Delay
+
+当悬停触发器时，工具提示会在短暂的延迟后出现，而当使用键盘焦点时，则会立即出现。这个延迟可以用延迟道具为悬停进行调整。
+
+```jsx
+<TooltipButton tooltip="Save" delay={0}>💾</TooltipButton>
+```
+
+### Trigger
+
+默认情况下，工具提示同时出现在悬停和焦点上。触发道具可以被设置为 "焦点"，以便只在焦点时显示工具提示，而不是在悬停时。
+
+```jsx
+<TooltipButton tooltip="Burn CD" trigger="focus">💿</TooltipButton>
+```
+
+### Controlled open state
+
+工具提示的打开状态可以通过defaultOpen和isOpen来控制。
+
+```jsx
+function Example() {
+  let [isOpen, setOpen] = React.useState(false);
+
+  return (
+    <>
+      <p>Tooltip is {isOpen ? 'showing' : 'not showing'}</p>
+      <TooltipButton
+        tooltip="Notifications"
+        isOpen={isOpen}
+        onOpenChange={setOpen}
+      >
+        📣
+      </TooltipButton>
+    </>
+  );
+}
+```
+
+### Disabled
+
+isDisabled道具可以提供给TooltipTrigger来禁用工具提示，而不会禁用它所显示的触发器。
+
+```jsx
+<TooltipButton tooltip="Print" isDisabled>🖨</TooltipButton>
+```
+
+## 国际化
+
+### RTL
+
+在从右到左的语言中，工具提示应该在整个触发器上进行镜像。确保你的CSS和叠加定位（如果有的话）考虑到这一点。
+

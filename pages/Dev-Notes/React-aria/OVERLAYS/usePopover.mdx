@@ -1,0 +1,281 @@
+#  usePopover
+
+-----
+## 简述
+为一个弹出式组件提供行为和可访问性实现。popover是一个相对于触发器定位的叠加元素。
+
+```yml
+install	yarn add react-aria
+version	3.22.0
+usage	import {usePopover} from 'react-aria'
+```
+
+##  用法
+
+**API**：    `usePopover(props: AriaPopoverProps, state: OverlayTriggerState): PopoverAria`
+
+
+## 功能详解  
+
+在HTML中没有内置的方法来创建弹出式窗口。 usePopover，有助于实现可访问的弹出式窗口，可以根据需要进行样式设计。
+
+### 功能特性
+- 可访问性 - 触发器和弹出式窗口通过ARIA自动进行语义关联。当弹出式窗口打开时，弹出式窗口外的内容被隐藏起来，不被辅助技术发现。当在外面进行交互或按下Escape键时，弹出窗口会关闭。
+- 焦点管理 - 焦点在加载时被移入弹出式窗口，在卸载时恢复到触发元素上。
+- 定位 - 弹出式窗口相对于触发元素定位，并自动翻转和调整，以避免与浏览器窗口的边缘重叠。在弹出窗口外防止滚动，以避免无意中重新定位或关闭它。
+
+> 注意：usePopover只处理覆盖物本身。它应该与useDialog结合，以创建完全可访问的弹出窗口。其他覆盖物，如菜单，也可以放在弹出窗口中。
+
+
+弹出式窗口由一个触发元素（如按钮）和一个覆盖层组成，覆盖层相对于触发元素的位置。覆盖层可以包含一个对话框，或另一个元素，如菜单或列表框，当在一个组件（如选择或组合框）中使用。
+
+**usePopover返回你应该传播到适当元素上的道具，以及计算出的弹出窗口相对于触发器的位置。**
+
+
+| Name        | Type         |         描述 |
+| :------------ | :---------: | ----------: |
+| popoverProps        |    react支持的DOM属性   | 弹出式html element的属性 |
+| arrowProps     |     react支持的DOM属性     |    弹出式提示箭头（可选）的属性 |
+| underlayProps |  react支持的DOM属性     |    优化元素（避免重新定位或关闭）的属性 |
+| placement |   'center'等    |   弹出窗口相对于触发器的位置。 |
+
+
+## 示例
+
+这个例子展示了如何建立一个典型的弹出式覆盖，它的位置相对于一个触发按钮。弹出窗口的内容是一个对话框，用`useDialog`构建。本例中使用的Dialog组件也可以在模态或其他类型的覆盖中重复使用。下面是实现方法。
+
+Popover组件使用`<Overlay>`在文档主体的末尾用`React Portal`渲染它的内容，这确保了它不会被其他元素剪掉。它还充当焦点范围，在弹出式窗口内包含`焦点`，并在其卸载时将其恢复到`触发器`上。 `usePopover`处理相对于`触发器元素`的弹出式窗口定位，并在用户进行外部交互或按下`Escape`键时关闭它。
+
+`usePopover`还隐藏了弹出窗口外的内容，不让屏幕阅读器看到，这很重要，因为周围的内容由于门户的原因不会在原始触发器的上下文中。为了让屏幕阅读器用户在没有键盘的情况下解散弹出窗口（例如在手机上），在弹出窗口的开始和结束处添加了视觉上隐藏的`<DismissButton>`元素。一个底层也被用来防止滚动和用指针与弹出窗口外的元素互动，以避免意外地重新定位或关闭它。
+
+
+```jsx
+import {DismissButton, Overlay, usePopover} from 'react-aria';
+
+function Popover({ children, state, offset = 8, ...props }) {
+  let popoverRef = React.useRef();
+  let { popoverProps, underlayProps, arrowProps, placement } = usePopover({
+    ...props,
+    offset,
+    popoverRef
+  }, state);
+
+  return (
+    <Overlay>
+      <div {...underlayProps} className="underlay" />
+      <div
+        {...popoverProps}
+        ref={popoverRef}
+        className="popover"
+      >
+        <svg {...arrowProps} className="arrow" data-placement={placement}>
+          <path d="M0 0,L6 6,L12 0" />
+        </svg>
+        <DismissButton onDismiss={state.close} />
+        {children}
+        <DismissButton onDismiss={state.close} />
+      </div>
+    </Overlay>
+  );
+}
+
+````
+
+
+上面的Popover组件可以作为许多不同模式的一部分使用，如[ComboBox](
+    https://react-spectrum.adobe.com/react-aria/useComboBox.html
+)
+、Select和DatePicker。
+要独立使用它，我们需要一个触发元素。下面的PopoverTrigger组件使用useOverlayTrigger钩子，在按钮被按下时触发弹出窗口。
+这个钩子也确保按钮和弹出式窗口通过ARIA进行语义连接。
+
+```jsx
+import {useOverlayTrigger} from 'react-aria';
+import {useOverlayTriggerState} from 'react-stately';
+
+// Reuse the Button from your component library. See below for details.
+import {Button} from 'your-component-library';
+
+function PopoverTrigger({ label, children, ...props }) {
+  let ref = React.useRef();
+  let state = useOverlayTriggerState(props);
+  let { triggerProps, overlayProps } = useOverlayTrigger(
+    { type: 'dialog' },
+    state,
+    ref
+  );
+
+  return (
+    <>
+      <Button {...triggerProps} buttonRef={ref}>{label}</Button>
+      {state.isOpen &&
+        (
+          <Popover {...props} triggerRef={ref} state={state}>
+            {React.cloneElement(children, overlayProps)}
+          </Popover>
+        )}
+    </>
+  );
+}
+
+```
+
+**现在，我们可以渲染一个包含对话框的弹出窗口的例子。**
+
+```jsx
+// Reuse the Dialog from your component library. See below for details.
+import {Dialog} from 'your-component-library';
+
+<PopoverTrigger label="Open Popover">
+  <Dialog title="Popover title">
+    This is the content of the popover.
+  </Dialog>
+</PopoverTrigger>
+
+```
+
+### Dialog
+Dialog组件在Popover组件中被渲染。它是使用useDialog钩子构建的，也可以在其他覆盖容器中使用，如Modals。
+
+用例
+
+```jsx
+import {useDialog} from 'react-aria';
+
+function Dialog({ title, children, ...props }) {
+  let ref = React.useRef();
+  let { dialogProps, titleProps } = useDialog(props, ref);
+
+  return (
+    <div
+      {...dialogProps}
+      ref={ref}
+      style={{ padding: 30, maxWidth: 200, outline: 'none' }}
+    >
+      {title &&
+        (
+          <h3 {...titleProps} style={{ marginTop: 0 }}>
+            {title}
+          </h3>
+        )}
+      {children}
+    </div>
+  );
+}
+    
+```
+
+### Button
+在上面的例子中，Button组件被用来切换弹出窗口。它是使用useButton钩子构建的，可以与许多其他组件共享。
+
+用例
+
+```jsx
+import {useButton} from 'react-aria';
+
+function Button(props) {
+  let ref = props.buttonRef;
+  let { buttonProps } = useButton(props, ref);
+  return (
+    <button {...buttonProps} ref={ref} style={props.style}>
+      {props.children}
+    </button>
+  );
+}
+```
+
+## 何时使用
+
+下面的例子展示了如何使用上面的例子中创建的Popover和PopoverTrigger组件。
+
+### 放置位置
+
+popover相对于其锚点元素的位置可以通过放置道具来调整。有关可用的位置组合的完整列表，请参见 "Placement"。
+
+```jsx
+
+<div style={{ display: 'flex', gap: 8 }}>
+  <PopoverTrigger placement="start" label="⬅️">
+    <Dialog>
+      In left-to-right, this is on the left. In right-to-left, this is on the
+      right.
+    </Dialog>
+  </PopoverTrigger>
+  <PopoverTrigger placement="top" label="⬆️">
+    <Dialog>This popover is above the button.</Dialog>
+  </PopoverTrigger>
+  <PopoverTrigger placement="bottom" label="⬇️">
+    <Dialog>This popover is below the button.</Dialog>
+  </PopoverTrigger>
+  <PopoverTrigger placement="end" label="➡️">
+    <Dialog>
+      In left-to-right, this is on the right. In right-to-left, this is on the
+      left.
+    </Dialog>
+  </PopoverTrigger>
+</div>
+```
+
+### 偏移和交叉偏移
+
+popover相对于其锚定元素的偏移量可以通过`offset`和`crossOffset`道具来调整。偏移道具控制元素和其锚定元素之间沿主轴应用的间距，而交叉偏移道具则处理沿交叉轴应用的间距。
+
+下面是一个弹出式窗口，在触发器上方增加了`50px`的偏移。
+
+```jsx
+
+<PopoverTrigger placement="top" offset={50} label="Trigger">
+  <Dialog>
+    Offset by an additional 50px.
+  </Dialog>
+</PopoverTrigger>
+```
+
+下面是一个弹出式的交叉点，在触发器的右边又偏移了100px。
+
+```jsx
+<PopoverTrigger placement="top" crossOffset={100} label="Trigger">
+  <Dialog>
+    Offset by an additional 100px.
+  </Dialog>
+</PopoverTrigger>
+
+````
+
+
+### 翻转
+
+
+***默认情况下，usePopover会在原来的位置会导致弹出式窗口出现在视野之外的情况下尝试在主轴上翻转。这可以通过设置shouldFlip={false}来覆盖。要看这两个选项的区别，请滚动本页面，使下面的例子靠近窗口底部***
+
+```jsx
+<PopoverTrigger placement="bottom" label="Default">
+  <Dialog>
+    This is a popover that will flip if it can't fully render below the button.
+  </Dialog>
+</PopoverTrigger>
+
+<PopoverTrigger placement="bottom" shouldFlip={false} label="shouldFlip=false">
+  <Dialog>
+    This is a popover that won't flip if it can't fully render below the button.
+  </Dialog>
+</PopoverTrigger>
+```
+
+### 容器的填充物
+
+你可以通过containerPadding道具控制popover和周围容器之间所需的最小填充。这将影响到决定它何时尝试翻转的定位断点。
+
+下面的例子将在弹出窗口和浏览器窗口的边缘之间保持至少50px。
+
+```jsx
+
+<PopoverTrigger placement="top" containerPadding={50} label="Trigger">
+  <Dialog>
+    This is a popover.
+  </Dialog>
+</PopoverTrigger>
+
+```
+
+

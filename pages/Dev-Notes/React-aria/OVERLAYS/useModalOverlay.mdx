@@ -1,0 +1,241 @@
+# useModalOverlay
+
+## 简介
+
+为模态组件提供行为和可访问性实现。模态是一个覆盖元素，它阻止了与外部元素的互动。
+
+```yml
+install	yarn add react-aria
+version	3.22.0
+usage	import {useModalOverlay} from 'react-aria'
+```
+
+## API
+
+```jsx
+    useModalOverlay(
+    props: AriaModalOverlayProps,
+    state: OverlayTriggerState,
+    ref: RefObject<HTMLElement>
+    ): ModalOverlayAria
+```
+
+## 功能
+
+HTML `<dialog>`元素可以用来建立模态。但是，它还没有被各浏览器广泛支持，而且可能很难进行样式和定制。 useModalOverlay，有助于实现可访问的模态覆盖，可以根据需要进行样式设计。
+
+### 功能特点
+
+- 可访问性--当模态打开时，模态外的内容被隐藏起来，不被辅助技术发现。当在外面进行交互或按**Escape**键时，模态可以选择关闭。
+- 焦点管理--焦点在加载时被移到模态中，并在卸载时恢复到触发元素上。在打开时，焦点被包含在模态中，防止用户在外面的标签。
+- 滚动锁定--当模态打开时，防止滚动后面的页面，包括在移动浏览器中。
+
+***注意：useModalOverlay只处理覆盖层本身。它应该与useDialog结合，以创建完全可访问的模态对话框。其他覆盖物，如菜单，也可以放在模态覆盖物中。***
+
+
+> MDN:`<dialog>`HTML元素表示一个对话框或其他交互式组件，例如一个可关闭警告、检查器或者窗口。
+
+## 功能拆解
+
+一个模态覆盖层由一个叠加容器元素和一个底层元素组成。覆盖层可以包含一个对话框，或者另一个元素，如菜单或列表框，当被用于一个组件，如选择或组合框。
+底层通常是一个部分透明的元素，它覆盖了覆盖层后面的屏幕的其余部分，并防止用户与它后面的元素进行交互。
+
+`useModalOverlay`返回你应该铺到覆盖层和底层元素上的Props。
+
+ | Name        | Type         |         描述 |
+| :------------ | :---------: | ----------: |
+| modalProps        |    react支持的DOM属性   | 模态ele |
+| underlayProps     |     react支持的DOM属性     |   透明层ele |
+
+
+***状态由@react-stately/overlays中的`useOverlayTriggerState`挂钩管理。状态对象应该作为参数传递给`useModalOverlay`。***
+
+
+## 示例
+
+这个例子展示了如何通过结合**useModalOverlay**和useDialog来建立一个典型的模态对话框。本例中使用的Dialog组件也可以在弹出式窗口或其他类型的覆盖物中重复使用。
+
+Modal组件使用`<Overlay>`在文档主体的末尾以**React Portal**的形式渲染其内容，这确保了它不会被其他元素剪掉。它还充当焦点范围，
+在模态内包含焦点，并在其取消安装时将其恢复到触发器。 useModalOverlay处理防止模态打开时的页面滚动，从屏幕阅读器中隐藏模态外的内容，
+并在用户在外面进行交互或按下`Escape`键时选择性地关闭它。
+
+```jsx
+import {Overlay, useModalOverlay} from 'react-aria';
+
+function Modal({ state, children, ...props }) {
+  let ref = React.useRef();
+  let { modalProps, underlayProps } = useModalOverlay(props, state, ref);
+
+  return (
+    <Overlay>
+      <div
+        style={{
+          position: 'fixed',
+          zIndex: 100,
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        {...underlayProps}
+      >
+        <div
+          {...modalProps}
+          ref={ref}
+          style={{
+            background: 'var(--page-background)',
+            border: '1px solid gray'
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </Overlay>
+  );
+}
+```
+
+下面的**ModalTrigger组件**使用`useOverlayTrigger`钩子，当一个按钮被按下时显示模态。它接受一个函数作为子函数，
+该函数被调用时有一个关闭模态的回调。这可以用来实现一个关闭按钮。
+
+```jsx
+
+import {useOverlayTrigger} from 'react-aria';
+import {useOverlayTriggerState} from 'react-stately';
+
+// Reuse the Button from your component library. See below for details.
+import {Button} from 'your-component-library';
+
+function ModalTrigger({ label, children, ...props }) {
+  let state = useOverlayTriggerState(props);
+  let { triggerProps, overlayProps } = useOverlayTrigger(
+    { type: 'dialog' },
+    state
+  );
+
+  return (
+    <>
+      <Button {...triggerProps}>Open Dialog</Button>
+      {state.isOpen &&
+        (
+          <Modal {...props} state={state}>
+            {React.cloneElement(children(state.close), overlayProps)}
+          </Modal>
+        )}
+    </>
+  );
+}
+
+```
+
+现在，我们可以渲染一个包含对话框的示例模态，并使用ModalTrigger提供的函数来关闭它的按钮。
+
+```jsx
+// Reuse the Dialog from your component library. See below for details.
+import {Dialog} from 'your-component-library';
+
+<ModalTrigger label="Open Dialog">
+  {close =>
+    <Dialog title="Enter your name">
+      <form style={{display: 'flex', flexDirection: 'column'}}>
+        <label htmlFor="first-name">First Name:</label>
+        <input id="first-name" />
+        <label htmlFor="last-name">Last Name:</label>
+        <input id="last-name" />
+        <Button
+          onPress={close}
+          style={{marginTop: 10}}>
+          Submit
+        </Button>
+      </form>
+    </Dialog>
+  }
+</ModalTrigger>
+
+```
+
+### 结合Dialog使用
+
+Dialog组件在ModalOverlay组件中被渲染。它是使用useDialog钩子构建的，也可以在其他覆盖容器中使用，如弹出式窗口。
+
+```jsx
+import {useDialog} from 'react-aria';
+
+function Dialog({ title, children, ...props }) {
+  let ref = React.useRef();
+  let { dialogProps, titleProps } = useDialog(props, ref);
+
+  return (
+    <div {...dialogProps} ref={ref} style={{ padding: 30 }}>
+      {title &&
+        (
+          <h3 {...titleProps} style={{ marginTop: 0 }}>
+            {title}
+          </h3>
+        )}
+      {children}
+    </div>
+  );
+}
+
+```
+
+### 结合Button使用
+
+在上面的例子中，Button组件被用来切换弹出窗口。它是使用useButton钩子构建的，可以与许多其他组件共享。
+
+```jsx
+import {useButton} from 'react-aria';
+
+function Button(props) {
+  let ref = props.buttonRef;
+  let { buttonProps } = useButton(props, ref);
+  return (
+    <button {...buttonProps} ref={ref} style={props.style}>
+      {props.children}
+    </button>
+  );
+}
+```
+
+## 何时使用
+
+下面的例子展示了如何使用上面的例子中创建的Modal和ModalTrigger组件。
+
+### Dismissable
+
+如果你的模态不需要用户进行确认，你可以在模态上设置isDismissable。这允许用户点击外部来关闭对话框。
+
+```jsx
+<ModalTrigger isDismissable label="Open Dialog">
+  {() =>
+    <Dialog title="Notice">
+      Click outside to close this dialog.
+    </Dialog>
+  }
+</ModalTrigger>
+```
+
+### 禁用键盘退出覆盖层
+
+
+默认情况下，模态可以通过按Escape键来关闭。这可以通过isKeyboardDismissDisabled道具来禁用。
+
+```jsx
+<ModalTrigger isKeyboardDismissDisabled label="Open Dialog">
+  {close =>
+    <Dialog title="Notice">
+      <p>You must close this dialog using the button below.</p>
+      <Button onPress={close}>Close</Button>
+    </Dialog>
+  }
+</ModalTrigger>
+```
+
+
+
+

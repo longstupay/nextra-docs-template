@@ -1,7 +1,8 @@
 {
   "index": "Introduction",
-  "another": "Another Page",
+  "another": "Another Page Detil",
   "advanced": "Advanced (A Folder)",
+  "Dev-Notes": "开发笔记",
   "about": {
     "title": "About",
     "type": "page"
