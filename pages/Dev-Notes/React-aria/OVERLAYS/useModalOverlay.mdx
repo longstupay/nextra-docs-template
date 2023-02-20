@@ -8,6 +8,10 @@
 install	yarn add react-aria
 version	3.22.0
 usage	import {useModalOverlay} from 'react-aria'
+--------------------------
+install pnpm add @react-aria/overlays
+version 3.12.1
+usage	import {useModalOverlay} from '@react-aria/overlays'
 ```
 
 ## API
@@ -48,15 +52,15 @@ HTML `<dialog>`元素可以用来建立模态。但是，它还没有被各浏�
 | underlayProps     |     react支持的DOM属性     |   透明层ele |
 
 
-***状态由@react-stately/overlays中的`useOverlayTriggerState`挂钩管理。状态对象应该作为参数传递给`useModalOverlay`。***
+**状态由@react-stately/overlays中的[useOverlayTriggerState](/Dev-Notes/React-aria/Others/OverlayTriggerState)管理。状态对象应该作为参数传递给`useModalOverlay`。**
 
 
 ## 示例
 
 这个例子展示了如何通过结合**useModalOverlay**和useDialog来建立一个典型的模态对话框。本例中使用的Dialog组件也可以在弹出式窗口或其他类型的覆盖物中重复使用。
 
-Modal组件使用`<Overlay>`在文档主体的末尾以**React Portal**的形式渲染其内容，这确保了它不会被其他元素剪掉。它还充当焦点范围，
-在模态内包含焦点，并在其取消安装时将其恢复到触发器。 useModalOverlay处理防止模态打开时的页面滚动，从屏幕阅读器中隐藏模态外的内容，
+`Modal组件`使用`<Overlay>`在文档主体的末尾以**React Portal**的形式渲染其内容，这确保了它不会被其他元素影响（能够渲染到任何DOM位置，跳出react层级树之外）。它还充当焦点范围，
+在模态内包含焦点，并在其卸载时将其恢复到触发器。 useModalOverlay处理防止模态打开时的页面滚动，从屏幕阅读器中隐藏模态外的内容，
 并在用户在外面进行交互或按下`Escape`键时选择性地关闭它。
 
 ```jsx

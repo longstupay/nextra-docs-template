@@ -1,0 +1,46 @@
+# OverlayTriggerState 
+
+## 如何使用
+
+OverlayTriggerState 是一个管理 overlay 触发器状态的 hook。它可以跟踪 overlay 是否打开，并提供切换这个状态的方法。
+在 @react-stately/overlays 包中使用 useOverlayTriggerState hook 来创建一个 OverlayTriggerState 对象，然后将它作为参数传递给 useOverlayTrigger hook，
+这个 hook 会返回应该传递给触发元素和 overlay 元素的 props。
+
+## 示例代码
+
+以下代码³，它展示了如何构建一个相对于触发按钮定位的 popover overlay。overlay 的内容是一个对话框，用 useDialog 构建。
+overlay 可以通过点击或交互 overlay 之外的区域，或者按下 Escape 键来关闭。这是由 useOverlay 处理的。
+
+```jsx
+import React from 'react';
+import {useOverlayTriggerState} from '@react-stately/overlays';
+import {useOverlayTrigger} from '@react-aria/overlays';
+import {useButton} from '@react-aria/button';
+
+function Popover(props) {
+  let state = useOverlayTriggerState(props);
+  let ref = React.useRef();
+  let {triggerProps, overlayProps} = useOverlayTrigger(props, state, ref);
+
+  return (
+    <div style={{position: 'relative'}}>
+      <button ref={ref} {...triggerProps}>Show popover</button>
+      {state.isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            width: '100px',
+            height: '100px',
+            top: '50px',
+            left: '50px',
+            backgroundColor: 'white'
+          }}
+          {...overlayProps}>
+          <Dialog />
+        </div>
+      )}
+    </div>
+  );
+}
+```
+

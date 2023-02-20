@@ -8,6 +8,11 @@
 install	yarn add react-aria
 version	3.22.0
 usage	import {usePopover} from 'react-aria'
+-----------------
+install pnpm add @react-aria/overlays
+version	3.12.1
+usage	import {usePopover} from '@react-aria/overlays'
+
 ```
 
 ##  用法
@@ -17,12 +22,12 @@ usage	import {usePopover} from 'react-aria'
 
 ## 功能详解  
 
-在HTML中没有内置的方法来创建弹出式窗口。 usePopover，有助于实现可访问的弹出式窗口，可以根据需要进行样式设计。
+在HTML中没有内置的方法来创建弹出式窗口。 usePopover有助于实现可访问的弹出式窗口，可以根据需要进行样式设计。
 
 ### 功能特性
 - 可访问性 - 触发器和弹出式窗口通过ARIA自动进行语义关联。当弹出式窗口打开时，弹出式窗口外的内容被隐藏起来，不被辅助技术发现。当在外面进行交互或按下Escape键时，弹出窗口会关闭。
 - 焦点管理 - 焦点在加载时被移入弹出式窗口，在卸载时恢复到触发元素上。
-- 定位 - 弹出式窗口相对于触发元素定位，并自动翻转和调整，以避免与浏览器窗口的边缘重叠。在弹出窗口外防止滚动，以避免无意中重新定位或关闭它。
+- 定位 - 弹出式窗口相对于触发元素定位，并自动翻转和调整，以避免与浏览器窗口的边缘重叠。在组件弹出时，窗口时禁止滚动，以避免无意中重新定位或关闭它。
 
 > 注意：usePopover只处理覆盖物本身。它应该与useDialog结合，以创建完全可访问的弹出窗口。其他覆盖物，如菜单，也可以放在弹出窗口中。
 
@@ -48,6 +53,8 @@ Popover组件使用`<Overlay>`在文档主体的末尾用`React Portal`渲染它
 
 `usePopover`还隐藏了弹出窗口外的内容，不让屏幕阅读器看到，这很重要，因为周围的内容由于门户的原因不会在原始触发器的上下文中。为了让屏幕阅读器用户在没有键盘的情况下解散弹出窗口（例如在手机上），在弹出窗口的开始和结束处添加了视觉上隐藏的`<DismissButton>`元素。一个底层也被用来防止滚动和用指针与弹出窗口外的元素互动，以避免意外地重新定位或关闭它。
 
+
+### Popover组件
 
 ```jsx
 import {DismissButton, Overlay, usePopover} from 'react-aria';
@@ -79,7 +86,7 @@ function Popover({ children, state, offset = 8, ...props }) {
   );
 }
 
-````
+```
 
 
 上面的Popover组件可以作为许多不同模式的一部分使用，如[ComboBox](
@@ -89,7 +96,9 @@ function Popover({ children, state, offset = 8, ...props }) {
 要独立使用它，我们需要一个触发元素。下面的PopoverTrigger组件使用useOverlayTrigger钩子，在按钮被按下时触发弹出窗口。
 这个钩子也确保按钮和弹出式窗口通过ARIA进行语义连接。
 
-```jsx
+### PopoverTrigger组件
+
+```jsx {18}
 import {useOverlayTrigger} from 'react-aria';
 import {useOverlayTriggerState} from 'react-stately';
 
@@ -120,9 +129,11 @@ function PopoverTrigger({ label, children, ...props }) {
 
 ```
 
+### Popover和PopoverTrigger组件的组合使用
+
 **现在，我们可以渲染一个包含对话框的弹出窗口的例子。**
 
-```jsx
+```jsx {5,7}
 // Reuse the Dialog from your component library. See below for details.
 import {Dialog} from 'your-component-library';
 
@@ -133,6 +144,10 @@ import {Dialog} from 'your-component-library';
 </PopoverTrigger>
 
 ```
+
+## 与其它组件结合使用
+
+通常需要触发元素来激活popover等覆盖组件,且popover需要一个dialog组件来渲染内容。下面是一个使用Button和Dialog组件的例子。
 
 ### Dialog
 Dialog组件在Popover组件中被渲染。它是使用useDialog钩子构建的，也可以在其他覆盖容器中使用，如Modals。

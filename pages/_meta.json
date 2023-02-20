@@ -2,9 +2,9 @@
   "index": "Introduction",
   "another": "Another Page Detil",
   "advanced": "Advanced (A Folder)",
-  "Dev-Notes": "开发笔记",
+  "Dev-Notes": "Dev Notes",
   "about": {
-    "title": "About",
+    "title": "About Us",
     "type": "page"
   },
   "contact": {

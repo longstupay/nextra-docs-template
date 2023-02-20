@@ -1,0 +1,123 @@
+# useToggleButton
+
+## 简介
+
+```yml
+install	yarn add react-aria
+version	3.22.0
+usage	import {useToggleButton} from 'react-aria'
+-------------------
+install pnpm add @react-aria/button
+version 3.6.4
+usage import {useToggleButton} from '@react-aria/button'
+```
+
+# API
+
+```jsx
+useToggleButton(
+  props: AriaToggleButtonProps<ElementType>,
+  state: ToggleState,
+  ref: RefObject<any>
+): ButtonAria<HTMLAttributes<any>>
+```
+
+## 功能
+
+切换按钮类似于动作按钮，但支持额外的选择状态，当用户按下按钮时，就会进行切换。没有内置的HTML元素来表示切换按钮，所以React Aria使用ARIA属性来实现它。
+
+### 功能特点
+
+- 本地HTML `<button>`, `<a>`, 和自定义元素类型支持
+- 通过ARIA暴露为一个切换按钮
+- 鼠标和触摸事件处理，以及按压状态管理
+- 键盘焦点管理和跨浏览器规范化
+- 对空格键和回车键的键盘事件支持
+
+## 功能拆解
+
+切换按钮包括一个可点击的区域，通常包含一个文本标签或一个图标，用户可以点击它来切换选择状态。此外，键盘用户可以使用**空格键**或**回车键**来切换状态。
+
+useToggleButton返回要散布在按钮元素上的Props，以及表示用户当前是否正在按动按钮的布尔值。
+
+ | Name        | Type         |         描述 |
+| :------------ | :---------: | ----------: |
+| buttonProps        |    T   | 按钮ele |
+| isPressed     |     boolean     |   当前按钮是否按下 |
+
+选择状态由`@react-stately/toggle`中的useToggleState管理。状态对象应该作为一个选项传递给useToggleButton。
+
+如果没有提供视觉标签（例如，只有图标的按钮），那么必须传递一个aria-label或aria-labelledby道具，以便向辅助技术识别该按钮。
+
+## 示例
+
+默认情况下，useToggleButton假设你是和一个本地的`<button>`元素一起使用。你可以通过向useToggleButton传递elementType来
+使用一个自定义的元素类型。参见useButton文档中的一个例子。
+
+下面的例子展示了如何使用useToggleButton和useToggleState钩子来构建一个切换按钮。切换状态被用来在未选择和选择时分别切换绿色和蓝色背景。
+此外，isPressed状态被用来在用户按下按钮时将背景调整到更深。
+
+```jsx
+import {useToggleState} from 'react-stately';
+import {useToggleButton} from 'react-aria';
+import {useRef} from 'react';
+
+function ToggleButton(props) {
+  let ref = useRef();
+  let state = useToggleState(props);
+  let { buttonProps, isPressed } = useToggleButton(props, state, ref);
+
+  return (
+    <button
+      {...buttonProps}
+      style={{
+        background: isPressed
+          ? state.isSelected ? 'darkgreen' : 'gray'
+          : state.isSelected
+          ? 'green'
+          : 'lightgray',
+        color: state.isSelected ? 'white' : 'black',
+        padding: 10,
+        fontSize: 16,
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        border: 'none'
+      }}
+      ref={ref}
+    >
+      {props.children}
+    </button>
+  );
+}
+
+<ToggleButton>Pin</ToggleButton>
+```
+
+## 何时使用
+
+下面的例子展示了如何使用上面的例子中创建的ToggleButton组件。
+
+### 受控的选择状态
+切换按钮的默认选择状态可以用defaultSelected道具设置，或者用isSelected道具控制。当用户按下按钮，切换布尔值时，onChange事件被触发。
+更多信息请参见[React关于不受控制的组件](https://reactjs.org/docs/uncontrolled-components.html)的文档。
+
+```jsx
+function Example() {
+  let [isSelected, setSelected] = React.useState(false);
+
+  return (
+    <ToggleButton
+      isSelected={isSelected}
+      onChange={setSelected}
+      aria-label="Star">
+      ★
+    </ToggleButton>
+  );
+}
+```
+
+### Disabled
+
+可以使用isDisabled道具禁用一个ToggleButton。
+
+`<ToggleButton isDisabled>Pin</ToggleButton>`
