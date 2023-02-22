@@ -1,0 +1,226 @@
+# Layout animations
+
+**React和Framer Motion创建布局和共享布局动画。**
+
+CSS布局的动画制作很困难，也很昂贵。
+
+像高度在100px和500px之间的动画在概念上是很简单的，但由于我们在每一个动画帧中都要触发浏览器的布局系统，所以性能很差。
+
+有时它甚至没有意义。在flex-start和flex-end之间对justify-content进行动画，实际上是什么意思？
+
+Framer Motion可以通过使用高性能的变换而不是布局系统在`任何CSS布局`之间制作动画。
+
+例如，这个组件是通过在flex-start和flex-end之间切换justify-content来实现动画的。
+
+```jsx
+
+<div className="switch" data-isOn={isOn} onClick={toggleSwitch}>
+      <motion.div className="handle" layout transition={spring} />
+</div>
+
+.switch {
+  width: 160px;
+  height: 100px;
+  background-color: rgba(255, 255, 255, 0.4);
+  display: flex;
+  justify-content: flex-start;
+  border-radius: 50px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.switch[data-isOn="true"] {
+  justify-content: flex-end;
+}
+```
+
+(示例)[https://codesandbox.io/s/framer-motion-2-layout-animations-kij8p?from-embed]
+
+**任何因重新渲染而发生的布局变化都会被动画化。这可能是以下的任何组合。**
+
+- 列表的重新排序。
+- 组件本身的样式设置，例如宽度或位置的改变。
+- 父类布局的改变，例如Flexbox或Grid。
+- 或者组件布局的任何其他变化。
+
+## 比例校正
+
+所有的布局动画都是使用变换属性进行的，从而使帧速率平稳。
+
+使用变换进行布局动画有时会在视觉上使子元素失真。为了纠正这种失真，元素的第一个子元素也可以被赋予布局属性。
+
+试着在布局之间切换这个组件，在粉红点上设置和不设置布局。
+
+```jsx {7}
+ const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <motion.div
+      layout
+      data-isOpen={isOpen}
+      initial={{ borderRadius: 50 }}
+      className="parent"
+      onClick={() => setIsOpen(!isOpen)}
+    >
+      <motion.div layout className="child" />
+    </motion.div>
+  );
+}
+```
+
+transforms也会使boxShadow和borderRadius失真。只要这两个Prop被设置为motion值，motion组件就会自动纠正这种扭曲。
+
+如果你不对这些值做动画，最简单的方法是通过样式来设置它们。
+
+```jsx
+<motion.div layout style={{ borderRadius: 20 }} />
+```
+
+## 自定义布局动画
+
+布局动画可以使用`transition`属性进行定制。
+
+```jsx
+<motion.div layout transition={{ duration: 0.3 }} />
+```
+
+如果你想只为`layout`动画专门设置一个过渡，你可以指定一个特定的`layout`过渡。
+
+```jsx
+<motion.div
+  layout
+  animate={{ opacity: 0.5 }}
+  transition={{
+    opacity: { ease: "linear" },
+    layout: { duration: 0.3 }
+  }}
+/>
+```
+
+## 在滚动容器内做动画
+
+为了在可滚动的元素中正确地进行布局动画，这些元素必须被赋予layoutScroll道具。
+
+```jsx
+<motion.div
+  layoutScroll
+  style={{ overflow: "scroll" }}
+/>
+```
+
+这让Framer Motion在测量子组件时考虑到这个元素的滚动偏移。
+
+## 协调布局的动画(Coordinating layout animations)
+
+当一个组件重新显示并且其布局发生变化时，会触发布局动画。
+
+```jsx
+function Accordion() {
+  const [isOpen, setOpen] = useState(false)
+  
+  return (
+    <motion.div
+      layout
+      style={{ height: isOpen ? "100px" : "500px" }}
+      onClick={() => setOpen(!isOpen)}
+    />
+  )
+}
+```
+
+但是，当我们有两个或更多的组件不在同一时间重新渲染，但确实影响到彼此的布局时，会发生什么？
+
+```jsx
+function List() {
+  return (
+    <>
+      <Accordion />
+      <Accordion />
+    </>  
+  )
+}
+```
+
+当一个组件重新渲染时，另一个组件将无法检测到其布局的变化。
+
+我们可以通过把它们包装在LayoutGroup组件中来同步多个组件的布局变化。
+
+```jsx
+import { LayoutGroup } from "framer-motion"
+
+function List() {
+  return (
+    <LayoutGroup>
+      <Accordion />
+      <Accordion />
+    </LayoutGroup>  
+  )
+}
+```
+
+现在，当在一个分组的组件中检测到布局变化时，布局动画将发生在所有的组件中。没有任何额外的重新渲染。
+
+## 共享的布局动画
+
+当一个新的组件被添加时，如果它的layoutId道具与现有的组件相匹配，它将自动地从旧的组件中产生动画。
+
+如果新的组件进入时，旧的组件仍在安装，它们将自动从旧的组件过渡到新的组件。
+
+```jsx
+<AnimatePresence exitBeforeEnter>
+    <motion.div
+    key={selectedTab ? selectedTab.label : "empty"}
+    initial={{ y: 10, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    exit={{ y: -10, opacity: 0 }}
+    transition={{ duration: 0.2 }}
+    >
+        {selectedTab ? selectedTab.icon : "😋"}
+    </motion.div>
+</AnimatePresence>
+
+```
+
+## 故障排除
+
+### 该组件没有动画效果
+
+确保该组件没有被设置为display: inline，因为浏览器不会对这些元素进行转换。
+
+### SVG布局动画被破坏
+
+SVG组件目前还不支持布局动画。SVG没有布局系统，所以建议直接对其属性进行动画处理，比如cx等。
+
+### `skew`transforms没有生效
+
+`skew`变换目前与布局动画不兼容。
+
+### 内容拉伸不理想
+
+这是用比例设置宽度和高度动画的自然副作用。某些元素，如包含在不同纵横比之间变化的元素（通常是文本元素），使用layout=“position”（仅设置元素位置的动画）可能会更好地设置动画。
+
+### 边界半径或框阴影的行为异常
+
+设置缩放比例的动画效果很好，但会扭曲一些样式，如边界半径和长方体阴影。
+Framer Motion会自动校正此比例失真，但此校正仅限于定义为像素或百分比的边界半径以及单个框阴影。
+
+### 粘滞元素未按预期设置动画
+
+具有位置：粘性的元素很难设置动画，因为它们在两个坐标空间（页面相对和视口相对）之间翻转，而没有任何方法检测应该使用哪个。
+如果position:sticky元素的子元素未按预期设置动画，则可以向sticky元素添加layoutRoot道具。这将在粘性元素上执行所有布局计算和即时布局动画，所有子元素将执行与其相关的布局动画。
+
+```jsx
+<motion.header layout layoutRoot style={{ position: "sticky" }}>
+  <motion.h1 layout />
+</motion.header>
+```
+
+当周围内容发生变化时，项目正在执行不需要的布局动画
+通过向父级添加layoutRoot，子级将执行所有相对于父级的布局动画。[请看例子](https://codesandbox.io/s/framer-motion-layoutroot-prop-gc4ckn?file=/src/App.js)。
+
+```jsx
+<motion.div className="switch-container" layout layoutRoot>
+  <motion.div className="switch-handle" layout />
+</motion.div>
+```
+

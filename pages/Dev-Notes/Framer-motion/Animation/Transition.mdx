@@ -1,0 +1,441 @@
+# Transition
+
+一个`transition `定义了价值如何从一个状态到另一个状态的动画。
+
+`transition `定义了在两个值之间做动画时使用的动画类型。
+
+```jsx
+<motion.div
+  animate={{ x: 100 }}
+  transition={{ delay: 1 }}
+/>
+```
+
+它也可以接受定义使用Tween、Spring或Inertia的动画类型的props。
+
+```jsx
+<motion.div
+  animate={{ x: 100 }}
+  transition={{ type: "spring", stiffness: 100 }}
+/>
+```
+
+## 特定值的过渡
+
+可以为特定的值定义不同类型的动画。默认可以用来为任何剩余的值定义动画。
+
+```jsx
+transition={{
+  delay: 0.5,
+  x: { duration: 1 },
+  default: { ease: "linear" }
+}}
+```
+
+## Orchestration
+
+### delay
+
+type: number
+
+延迟动画的时间（以秒为单位）。默认为0
+
+```jsx
+const transition = {
+  delay: 0.2
+}
+```
+
+通过设置延迟为负值，动画将在动画的那段时间开始。例如，要在1秒后开始，延迟可以设置为-1。
+
+### delayChildren
+
+: number
+
+当使用变体时，子组件动画将在这个持续时间（以秒为单位）后开始。你可以直接将过渡属性添加到`frame`和`variant`中。
+把它添加到变体中通常会提供更多的灵活性，因为它允许你定制每个视觉状态的延迟。
+
+```jsx
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      delayChildren: 0.5
+    }
+  }
+}
+
+const item = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1 }
+}
+
+return (
+  <motion.ul
+    variants={container}
+    initial="hidden"
+    animate="show"
+  >
+    <motion.li variants={item} />
+    <motion.li variants={item} />
+  </motion.ul>
+)
+```
+
+### staggerChildren
+
+: number
+
+当使用`variants`时，子组件的动画可以通过这个持续时间（以秒为单位）错开。
+
+例如，如果staggerChildren是0.01，第一个子组件将延迟0秒，第二个延迟0.01，第三个延迟0.02，以此类推。
+
+计算出的交错延迟将被添加到delayChildren中。
+
+```jsx
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.5
+    }
+  }
+}
+
+const item = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1 }
+}
+
+return (
+  <motion.ol
+    variants={container}
+    initial="hidden"
+    animate="show"
+  >
+    <motion.li variants={item} />
+    <motion.li variants={item} />
+  </motion.ol>
+)
+```
+
+### staggerDirection
+
+: number
+
+错开子组件的方向。
+
+值为1时，从第一个到最后一个错开，而-1时，从最后一个到第一个错开。
+
+```jsx {7}
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      delayChildren: 0.5,
+      staggerDirection: -1
+    }
+  }
+}
+
+const item = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1 }
+}
+
+return (
+  <motion.ul
+    variants={container}
+    initial="hidden"
+    animate="show"
+  >
+    <motion.li variants={item} size={50} />
+    <motion.li variants={item} size={50} />
+  </motion.ul>
+)
+```
+
+
+### when
+
+type: false | "beforeChildren" | "afterChildren" | string
+
+描述过渡和它的子组件之间的关系。默认设置为false。
+
+当使用`variants`时，可以用 `"beforeChildren "`来安排`transition`与它的子代的关系，在开始子代过渡之前
+完成这个`transition`，`"afterChildren "`在开始这个过渡之前完成子代`transition`。
+
+```jsx {4}
+const list = {
+  hidden: {
+    opacity: 0,
+    transition: { when: "afterChildren" }
+  }
+}
+
+const item = {
+  hidden: {
+    opacity: 0,
+    transition: { duration: 2 }
+  }
+}
+
+return (
+  <motion.ul variants={list} animate="hidden">
+    <motion.li variants={item} />
+    <motion.li variants={item} />
+  </motion.ul>
+)
+```
+
+### repeat
+
+type: number
+
+重复`transition`的次数。设置为无穷大，可以永久重复。
+
+不设置repeatType，会循环播放动画。
+
+```jsx {3}
+<motion.div
+  animate={{ rotate: 180 }}
+  transition={{ repeat: Infinity, duration: 2 }}
+/>
+```
+
+### repeatType
+
+type: "loop" | "reverse" | "mirror"
+
+如何重复动画。这可以是
+
+- 循环。从头开始重复动画
+- 反转。交替向前和向后播放
+- 镜像。交替切换从和到
+
+```jsx {5}
+<motion.div
+  animate={{ rotate: 180 }}
+  transition={{
+    repeat: 1,
+    repeatType: "reverse",
+    duration: 2
+  }}
+/>
+```
+
+### repeatDelay
+
+type: number
+
+当重复一个动画时， repeatDelay将设置每次重复之间的等待时间，单位是秒。
+
+```jsx /repeatDelay/ copy
+<motion.div
+  animate={{ rotate: 180 }}
+  transition={{ repeat: Infinity, repeatDelay: 1 }}
+/>
+```
+
+## Tween
+
+**type: `"tween"`**
+
+将类型设置为 "tween "以使用基于持续时间的动画。如果任何非编排([orchestration](#orchestration))的过渡值被设置为没有类型属性，这将作为默认的动画。
+
+```jsx /tween/ copy
+<motion.path
+  animate={{ pathLength: 1 }}
+  transition={{ duration: 2, type: "tween" }}
+/>
+```
+
+
+### duration
+
+type: number
+
+### ease
+type: Easing | Easing[]
+
+要使用的ease函数。设置为下列之一。
+
+- 一个现有的ease函数的名称。
+- 一个由四个数字组成的数组，用来定义一个立方贝塞尔曲线。
+- 一个ease函数，接受并返回一个值0-1。
+- 如果动画值被设置为一个关键帧动画的多个值的数组，ease可以被设置为一个ease函数的数组，在每个值之间设置不同的ease。
+
+```jsx /ease/ copy
+<motion.div
+  animate={{ opacity: 0 }}
+  transition={{ ease: [0.17, 0.67, 0.83, 0.67] }}
+/>
+```
+
+### from
+
+type: number | string
+
+要制作动画的值。默认情况下，这是该动画值的当前状态。
+
+### times
+
+type: number[]
+
+当为关键帧制作动画时，`times`可以用来确定每个关键帧在动画中到达的位置。`times`中的每个值都是一个介于0和1之间的值，代表持续时间。
+
+`times`的数量必须与关键帧的数量相同。默认是一个均匀分布的持续时间数组。
+
+## Spring
+
+An animation that simulates spring physics for realistic motion.
+模拟弹性以实现真实运动的动画。
+
+This is the default animation for physical values like x, y, scale and rotate.
+这是物理值（如x、y、缩放和旋转）的默认动画。
+
+**`type: "spring"`**
+
+```jsx /spring/ copy
+<motion.div
+  animate={{ rotate: 180 }}
+  transition={{ type: 'spring' }}
+/>
+```
+
+### duration
+
+type: number
+
+动画的持续时间，以秒为单位定义。弹性动画最多可以是10秒。
+
+如果设置了`bounce `，这个默认值是0.8。
+
+注意：如果设置了`stiffness`、`damping`或`mass`，`duratioin`和`bounce`将被覆盖。
+
+### bounce
+
+type: number
+
+bounce决定了弹性动画的 "弹跳性"。
+
+0是没有弹跳，1是极度弹跳。
+
+如果设置了持续时间，这个默认值是0.25。
+
+注意：如果设置了`stiffness`、`damping`或`mass`，`duratioin`和`bounce`将被覆盖。
+
+### damping
+
+type='number'
+
+对抗力的强度。如果设置为0，弹簧将无限期地摆动。默认设置为10。
+
+### mass
+
+type='number'
+
+移动物体的质量。更高的值将导致更多的昏昏欲睡的运动。默认设置为1。
+
+### stiffness
+
+type='number'
+
+弹簧的刚度。更高的值会产生更多的突然运动。默认设置为100。
+
+### velocity
+
+type='number'
+
+弹簧的初始速度。默认情况下，这是该部件的当前速度。
+
+### restSpeed
+
+type='number'
+
+如果绝对速度（以每秒为单位）下降到这个值以下，并且delta小于restDelta，则结束动画。默认设置为0.01。
+
+### restDelta
+
+type='number'
+
+如果距离低于这个值并且速度低于restSpeed，则结束动画。当动画结束时，弹簧会被 "折断 "到。默认设置为0.01。
+
+
+## Inertia
+
+一个基于其初始速度的减速动画，通常用于实现惯性滚动。
+
+可以选择定义最小和最大的边界，惯性会以弹簧动画的方式扣住这些边界。
+
+这个动画会自动预先计算一个目标值，这个目标值可以用modifyTarget属性来修改。
+
+这允许你添加snap-to-grid或类似的功能。
+
+惯性也是用于dragTransition的动画，并且可以通过该道具进行配置。
+
+`type: "inertia"`
+
+设置类型，使用惯性动画进行动画。默认设置为 "tween"。这可以用于自然减速，比如动量滚动。
+
+```jsx /inertia/ copy
+<motion.div
+  animate={{ rotate: 180 }}
+  transition={{ type: "inertia", velocity: 50 }}
+/>
+```
+
+### modifyTarget(v)
+
+一个接收自动计算的目标并返回一个新目标的函数。对于将目标锁定在一个网格上很有用。
+
+### bounceStiffness
+
+type='number'
+
+如果设置了`min`或`max`，这将影响反弹弹簧的硬度。更高的值会产生更多的突然运动。默认设置为500。
+
+```jsx /bounceStiffness/ {4,5} copy
+<motion.div
+  drag
+  dragTransition={{
+    min: 0,
+    max: 100,
+    bounceStiffness: 100
+  }}
+/>
+```
+
+### power
+
+type='number'
+
+更高的功率值等于更远的目标。默认设置为0.8。
+
+### max
+
+最小约束。如果设置了，该值将**bump**到该值（如果动画开始时小于该值，则立即弹到该值）。
+
+## Miscellaneous
+
+目标和过渡
+
+一个指定动画值的对象。每个值可以设置为一个单一的值，或者一个值的数组。
+
+它也可以选择包含这些属性。
+
+`transition:` 指定所有或单个值的过渡。
+
+`transitionEnd: `指定动画结束时要设置的值。
+
+```jsx {4,5} copy
+const target = {
+  x: "0%",
+  opacity: 0,
+  transition: { duration: 1 },
+  transitionEnd: { display: "none" }
+}
+```

@@ -1,0 +1,168 @@
+# Gestures
+
+一个强大的浏览器手势识别系统。
+
+Motion扩展了React所提供的基本事件监听器，并提供了一套简单而强大的UI手势识别器。
+
+它目前支持悬停、点击、平移和拖动手势检测。每个手势都有一系列的事件监听器，你可以附加到你的Motion组件上。
+
+## 动画助手
+
+### 一般使用
+
+运动组件提供多个手势动画道具：whileHover、whileTap、whileFocus、whileDrag和whileInView。这些都可以定义动画目标，以便在手势活动时临时为其制作动画。
+
+```jsx {2,6}
+<motion.button
+  whileHover={{
+    scale: 1.2,
+    transition: { duration: 1 },
+  }}
+  whileTap={{ scale: 0.9 }}
+/>
+```
+
+所有的道具都可以被设置为动画的目标值，或通过变体道具定义的任何变体的名称。变体将像正常一样通过子代流转。
+
+```jsx {4,7}
+<motion.button
+  whileTap="tap"
+  whileHover="hover"
+  variants={buttonVariants}
+>
+  <svg>
+    <motion.path variants={iconVariants} />
+  </svg>
+</motion.button>
+```
+
+运动组件自动管理这些而道具之间的相互作用。因此，例如，如果悬停开始和停止，而轻拍手势处于活动状态，轻拍手势获得优先权，任何定义在两者上的属性将保持在轻拍状态。
+
+同样地，如果这两种手势都被定义了，而轻拍结束了，组件将知道动画化为whileHover中定义的状态，或者组件的原始状态，这取决于轻拍是在组件内部还是外部结束。
+
+### 传播(Propagation)
+
+子组件可以使用捕获React道具停止指针事件传播到父运动组件。
+
+例如，子代可以通过向onPointerDownCapture传递e.stopPropagation()来停止拖动和点击手势及其相关的动画在父代上启动。
+
+```jsx
+
+<motion.div whileTap={{ scale: 2 }}>
+  <button onPointerDownCapture={e => e.stopPropagation()} />
+</motion.div>
+```
+
+### 关于SVG过滤器的说明
+
+while辅助属性在SVG过滤组件上不起作用，因为这些元素没有物理存在，因此不会接收事件。为了响应手势，你需要为组件引入React状态，并将监听器附加到物理元素上。
+
+```jsx
+const MyComponent = () => {
+  const [isHovered, setHovered] = useState(false)
+
+  // Simplified example
+  return (
+    <svg>
+      <image
+        filter="url(#blur)"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      />
+      <filter id="blur">
+        <motion.div
+          initial={false}
+          animate={{ stdDeviation: isHovered ? 0 : 2 }}
+        />
+      </filter>
+    </svg>
+  )
+}
+```
+
+## 悬停
+
+悬停手势检测指针在一个组件上悬停或离开时的情况。
+
+它与onMouseEnter和onMouseLeave不同的是，hover保证只在实际的鼠标事件（而不是由触摸输入模拟的浏览器生成的鼠标事件）发生时启动。
+
+```jsx
+<motion.a
+  whileHover={{ scale: 1.2 }}
+  onHoverStart={e => {}}
+  onHoverEnd={e => {}}
+/>
+```
+
+[示例](https://codesandbox.io/s/framer-motion-hover-animations-h44jpy?from-embed)
+
+### whileHover:变体标签 | 目标和过渡
+
+当悬停手势被识别时，要制作动画的属性或变体标签。
+
+### onHoverStart(event, info): void
+
+当指针开始在组件上悬停时触发的回调函数。
+
+### onHoverEnd(event, info): void
+
+当指针停止在组件上悬停时触发的回调函数。
+
+`<motion.div onHoverEnd={() => console.log("Hover ends")} />`
+
+## 焦点
+
+焦点手势通过与CSS :focus-visible选择器相同的规则来检测一个组件何时获得或失去焦点。
+
+典型的情况是，当一个输入通过任何方式获得焦点，以及当其他元素通过可访问的方式（如通过键盘导航）获得焦点。
+
+```jsx
+<motion.a
+  whileFocus={{ scale: 1.2 }}
+  href="#"
+/>
+```
+
+### whileFocus:变体标签 | 目标和过渡
+
+当焦点手势被识别时，要制作动画的属性或变体标签。
+
+`<motion.input whileFocus={{ scale: 1.2 }} />`
+
+
+## 轻敲(Tap)
+
+轻敲手势可以检测到主指针（如左键或第一个触摸点）在同一部件上按下并释放。
+
+当在一个组件上的敲击成功完成时，它会触发一个敲击事件，而当在组件外的敲击结束时，会触发一个敲击取消事件。
+
+如果可点击的组件是可拖动的组件的子组件，如果指针在手势过程中移动超过3像素，它会自动取消点击手势。
+
+### 可访问性
+有轻敲事件的元素是可以用键盘访问的。
+
+任何具有轻击道具的元素都可以接受焦点，而回车键可以用来触发焦点元素上的轻击事件。
+
+- 按下回车键将触发onTapStart和whileTap。
+- 释放回车将触发onTap
+- 如果元素在释放Enter之前失去了焦点，onTapCancel将会触发。
+
+#### whileTap: VariantLabels | TargetAndTransition
+
+当组件被按下时，要动画化的属性或变体标签。
+
+`<motion.div whileTap={{ scale: 0.8 }} />`
+
+## 平移(Pan)
+
+平移手势是指当指针压在一个组件上并进一步移动超过3个像素。指针被释放时，平移手势就结束了。
+
+`<motion.div onPan={(e, pointInfo) => {}} />`
+
+## 拖动(Drag)
+
+拖动手势遵循平移手势的规则，但将指针移动到组件的X和/或Y轴。
+
+`<motion.div drag />`
+
+
