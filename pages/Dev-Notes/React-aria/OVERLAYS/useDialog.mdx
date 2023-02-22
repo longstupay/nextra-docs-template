@@ -1,0 +1,188 @@
+# useDialog
+
+## 简介
+
+提供对话框组件的行为和可访问性实现。对话框是在一个应用程序中显示在其他内容之上的一个覆盖物。
+
+```yml
+install	yarn add react-aria
+version	3.22.0
+usage	import {useDialog} from 'react-aria'
+@react-aria/dialog version 3.4.2
+
+```
+
+## API
+
+`useDialog(props: AriaDialogProps, ref: RefObject<FocusableElement>): DialogAria`
+
+-------------
+
+
+## 功能
+
+`<dialog>`元素可以用来构建对话框。然而，它尚未在各浏览器中得到广泛支持，而且从头开始构建完全无障碍的自定义对话框是非常困难和容易出错的。 **useDialog**帮助实现无障碍的对话框
+，可以根据需要进行样式设计。
+
+### 功能特点
+
+- 灵活 - 对话框可以在Modal或弹出式窗口(popover)中使用，以创建多种类型的覆盖(overlay)元素。
+- 可访问性--作为一个具有ARIA的对话框或警报对话框暴露给辅助技术。对话框由它的标题元素来标记，当它打开时，对话框外的内容被隐藏起来，不被辅助技术发现。
+- 焦点管理--焦点在加载时被移入对话框，并在卸载时恢复到触发元素。在打开时，焦点被包含在对话框中，防止用户向外滑动。
+
+## 功能拆解
+
+一个对话框由一个容器元素和一个可选的标题组成。 useDialog处理使用ARIA将其暴露给辅助技术。它可以与useModalOverlay或usePopover结合，以创建模态对话框
+、弹出窗口和其他类型的覆盖。
+
+useDialog返回你应该传播到适当元素上的Props。
+
+
+
+ | Name        | Type         |         描述 |
+| :------------ | :---------: | ----------: |
+| dialogProps        |    react支持的DOM属性   | 对话框容器ele |
+| titleProps     |     react支持的DOM属性     |   对话框标题ele |
+
+> 如果一个对话框没有可见的标题元素，则必须传递一个aria-label或aria-labelledby道具，以向辅助技术识别该元素。
+
+
+## 示例
+
+这个例子展示了如何通过结合**useDialog**和**useModalOverlay**来建立一个典型的对话框。Modal组件的代码在下面提供。
+对话框组件也可以在一个弹出式窗口中使用。关于叠加容器的更多细节，请参见文档。
+
+```jsx
+import {useDialog} from 'react-aria';
+
+// Reuse the Button and Modal from your component library. See below for details.
+import {Button, Modal, ModalTrigger} from 'your-component-library';
+
+function Dialog({ title, children, ...props }) {
+  let ref = React.useRef();
+  let { dialogProps, titleProps } = useDialog(props, ref);
+
+  return (
+    <div {...dialogProps} ref={ref} style={{ padding: 30 }}>
+      <h3 {...titleProps} style={{ marginTop: 0 }}>
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+<ModalTrigger label="Open Dialog">
+  {(close) => (
+    <Dialog title="Enter your name">
+      <form style={{ display: 'flex', flexDirection: 'column' }}>
+        <label htmlFor="first-name">First Name:</label>
+        <input id="first-name" />
+        <label htmlFor="last-name">Last Name:</label>
+        <input id="last-name" />
+        <Button
+          onPress={close}
+          style={{ marginTop: 10 }}
+        >
+          Submit
+        </Button>
+      </form>
+    </Dialog>
+  )}
+</ModalTrigger>
+
+```
+
+### Modal
+
+Modal和**ModalTrigger**组件在一个典型的Modal容器中渲染对话框，该容器有一个部分透明的底层。参见**useModalOverlay**获取更多细节。
+
+```jsx
+
+import {Overlay, useModalOverlay, useOverlayTrigger} from 'react-aria';
+import {useOverlayTriggerState} from 'react-stately';
+
+function Modal({ state, children, ...props }) {
+  let ref = React.useRef();
+  let { modalProps, underlayProps } = useModalOverlay(props, state, ref);
+
+  return (
+    <Overlay>
+      <div
+        style={{
+          position: 'fixed',
+          zIndex: 100,
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        {...underlayProps}
+      >
+        <div
+          {...modalProps}
+          ref={ref}
+          style={{
+            background: 'var(--page-background)',
+            border: '1px solid gray'
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </Overlay>
+  );
+}
+
+function ModalTrigger({ label, children, ...props }) {
+  let state = useOverlayTriggerState(props);
+  let { triggerProps, overlayProps } = useOverlayTrigger(
+    { type: 'dialog' },
+    state
+  );
+
+  return (
+    <>
+      <Button {...triggerProps}>Open Dialog</Button>
+      {state.isOpen &&
+        (
+          <Modal state={state}>
+            {React.cloneElement(children(state.close), overlayProps)}
+          </Modal>
+        )}
+    </>
+  );
+}
+
+```
+
+### Button
+
+在上面的例子中，Button组件被用来打开和关闭对话框。它是使用useButton钩子构建的，可以与许多其他组件共享。
+
+```jsx
+
+import {useButton} from 'react-aria';
+
+function Button(props) {
+  let ref = React.useRef();
+  let { buttonProps } = useButton(props, ref);
+  return (
+    <button {...buttonProps} ref={ref} style={props.style}>
+      {props.children}
+    </button>
+  );
+}
+```
+
+
+
+
+
+
+
+

@@ -1,0 +1,61 @@
+# React-aria OverlayProvider
+
+## 简介
+
+OverlayProvider 是 React-aria 提供的一个组件，用于包裹应用程序的根元素，以支持覆盖层（overlay）的功能。
+
+覆盖层是一种显示在其他内容之上的元素，例如对话框、弹出框、菜单、列表框等。OverlayProvider 可以帮助管理覆盖层的堆叠顺序、焦点管理、模态行为等。
+
+可以把 OverlayProvider 放在你的应用程序的最外层，并把其他内容放在它的子元素中。
+
+## 如何使用
+
+- 使用 `OverlayProvider` 和 `useOverlayTrigger` 来构建一个弹出菜单
+
+- 弹出菜单是一种覆盖层，它在用户点击或悬停在一个触发元素（例如按钮）时显示，并提供一些选项或操作。
+
+```tsx
+import React, {useState} from 'react';
+import {OverlayProvider, useOverlayTrigger} from 'react-aria';
+import {useOverlay} from 'react-aria';
+
+// Define a Menu component to render the popover content
+function Menu(props: any) {
+  // Get props for the overlay element
+  let {overlayProps} = useOverlay(props);
+
+  return (
+    <div
+      {...overlayProps}
+      className="absolute w-48 border border-black bg-white">
+      {/* Render menu items here */}
+    </div>
+  );
+}
+
+// Define a Trigger component to render the trigger element
+function Trigger(props: any) {
+  // Get props for the trigger and overlay elements
+  let {triggerProps, overlayProps} = useOverlayTrigger(props);
+
+  return (
+    <div className="relative">
+      <button {...triggerProps} className="bg-blue-500 text-white px-4 py-2 rounded">Open menu</button>
+      {/* Render overlay element here */}
+      {props.isOpen && <Menu {...overlayProps} />}
+    </div>
+  );
+}
+
+// Use OverlayProvider and Trigger components in your app
+function App() {
+  // Manage state for opening and closing the menu
+  let [isOpen, setOpen] = useState(false);
+
+  return (
+    <OverlayProvider>
+      <Trigger isOpen={isOpen} onClose={() => setOpen(false)} onOpen={() => setOpen(true)} />
+    </OverlayProvider>
+  );
+}
+```

@@ -1,0 +1,313 @@
+# Animation
+
+在Framer Motion中制作动画。
+
+在Framer Motion中，有多种方法来制作动画，可以根据你的需求的复杂程度来调整。
+
+## 简单的Animation(动画)
+
+大多数动画将用animate执行。
+
+```jsx
+<motion.div animate={{ x: 100 }} />
+```
+
+当animate中的任何值发生变化时，该组件将自动为更新的目标制作动画。
+
+## 可控制的Animation(动画)
+
+### 动画过度(Transition)
+
+默认情况下，Motion会根据被动画化的值的类型来创建一个适当的动画，以实现快速的过渡。例如，像X或scal默认会通过诸如`spring`来实现动画过度。
+而像不透明度或颜色这样的值将通过Tween来实现动画。
+
+然而，你也可以通过向transition传递一个默认的过渡来定义不同类型的动画。
+
+```jsx
+<motion.div
+  animate={{ x: 100 }}
+  transition={{ ease: "easeOut", duration: 2 }}
+/>
+```
+
+### 输入动画
+
+当一个动作组件第一次被创建时，如果它与样式或初始化中定义的数值不同，它将自动按照animate中的数值制作动画。你可以把initial 设置为false来禁用输入动画。
+
+
+`<motion.div animate={{ x: 100 }} initial={false} />`
+
+### 退出动画
+
+在React中，当一个组件从树中移除时，它会被立即移除。Framer Motion提供了AnimatePresence组件，可以在组件执行退出动画时将其留在DOM中。
+
+```jsx
+<AnimatePresence>
+  {isVisible && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    />
+  )}
+</AnimatePresence>
+```
+
+### 关键帧
+
+animate中的数值也可以被设置为一系列的关键帧。这将按顺序对每个值进行动画处理。
+
+```jsx
+<motion.div
+  animate={{ x: [0, 100, 0] }}
+/>
+```
+
+我们可以通过传递通配符关键帧null来使用当前值作为初始关键帧。
+
+```jsx
+<motion.div
+  animate={{ x: [null, 100, 0] }}
+/>
+```
+
+这样，如果一个关键帧的动画在当前值的动画中开始，过渡将更加自然。它也减少了我们代码中的重复。
+
+`<motion.circle cx={500} animate={{ cx: [null, 100] }} />`
+
+每个关键帧将在整个动画中均匀地间隔开来。你可以通过过渡设置时间选项来覆盖这一点。
+
+times是一个与关键帧数组相同长度的数组，其中0和1之间的数字定义了动画中每个关键帧应该被击中的位置。
+
+```jsx
+<motion.circle
+  cx={500}
+  animate={{ cx: [null, 100, 200] }}
+  transition={{ duration: 3, times: [0, 0.2, 1] }}
+/>
+```
+
+## 手势动画
+
+Framer Motion有一些快捷键，用于在手势开始时对一组数值进行动画处理，如悬停、点击、拖动、聚焦(`hover`, `tap`, `drag`,`focus`)和inView。
+
+```jsx
+<motion.button
+  initial={{ opacity: 0.6 }}
+  whileHover={{
+    scale: 1.2,
+    transition: { duration: 1 },
+  }}
+  whileTap={{ scale: 0.9 }}
+  whileInView={{ opacity: 1 }}
+/>
+```
+
+当这些手势结束时，它将自动计算出哪些数值需要做回动画。
+
+
+## 变体(variants)
+
+将animate设置为一个对象对于简单的、单一组件的动画是很有用的。但有时我们想创建在整个DOM中传播的动画，
+并以一种**声明的方式**协调这些动画。我们可以用变体来做到这一点。
+
+(示例)[https://codesandbox.io/s/framer-motion-variants-rj7ks0?from-embed]
+
+变体是一组预先定义的目标。
+
+```jsx
+const variants = {
+  visible: { opacity: 1 },
+  hidden: { opacity: 0 },
+}
+```
+
+它们通过prop属性variants被传递到motion组件中。
+
+```jsx
+<motion.div variants={variants} />
+```
+
+这些变体可以通过标签来引用，只要你能定义一个动画对象。
+
+```jsx
+<motion.div
+  initial="hidden"
+  animate="visible"
+  variants={variants}
+/>
+```
+
+### 传播(propagation)
+如果一个motion组件有children，变体的变化将通过组件的层次结构向下流动，直到一个子代组件定义了它自己的animate属性。
+
+```jsx
+const list = {
+  visible: { opacity: 1 },
+  hidden: { opacity: 0 },
+}
+
+const item = {
+  visible: { opacity: 1, x: 0 },
+  hidden: { opacity: 0, x: -100 },
+}
+
+return (
+  <motion.ul
+    initial="hidden"
+    animate="visible"
+    variants={list}
+  >
+    <motion.li variants={item} />
+    <motion.li variants={item} />
+    <motion.li variants={item} />
+  </motion.ul>
+)
+```
+
+### 编排(Orchestration)
+
+默认情况下，所有这些动画将同时开始。但是通过使用变体，我们可以获得额外的过渡道具，比如when、delayChildren
+和staggerChildren，这些道具可以让父类协调子类动画的执行。
+
+```jsx
+const list = {
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.3,
+    },
+  },
+  hidden: {
+    opacity: 0,
+    transition: {
+      when: "afterChildren",
+    },
+  },
+}
+```
+
+### 动态变体(Dynamic variants)
+
+每个变体都可以被定义为一个函数，当变体被访问时就会被解析。这些变体函数被提供一个参数，可以在组件的自定义道具中设置。
+
+```jsx
+const variants = {
+  visible: i => ({
+    opacity: 1,
+    transition: {
+      delay: i * 0.3,
+    },
+  }),
+  hidden: { opacity: 0 },
+}
+
+return items.map((item, i) => (
+  <motion.li
+    custom={i}
+    animate="visible"
+    variants={variants}
+  />
+))
+```
+
+### 多个变体
+
+像animate、whileHover等道具可以通过传递一个字符串或一个字符串数组来定义一个或多个变体。
+
+```jsx
+<motion.ul variants={["open", "primary"]} />
+```
+
+如果变体定义相同的值，在数组中较晚出现的变体将优先于数组中较早出现的变体。
+
+
+## 手动控制(Manual controls)
+
+声明式动画是大多数UI交互的理想选择。但有时我们需要协调更复杂的序列。
+
+useAnimationControls钩子可以用来手动启动/停止动画，并将它们组合在一起。
+
+```jsx {2}
+const MyComponent = () => {
+  const controls = useAnimationControls()
+  
+  useEffect(() => {
+    controls.start({
+      x: "100%",
+      backgroundColor: "#f00",
+      transition: { duration: 3 },
+    })
+  }, [])
+
+  return <motion.div animate={controls} />
+}
+```
+
+## 为单个数值制作动画
+
+也可以用低级别的animate函数对单个数值或单个MotionValue进行动画处理。
+
+```jsx
+const x = useMotionValue(0)
+
+useEffect(() => {
+  const controls = animate(x, 100, {
+    type: "spring",
+    stiffness: 2000,
+    onComplete: v => {}
+  })
+
+  return controls.stop
+})
+```
+
+## 动画内容
+
+我们可以通过将MotionValue作为运动组件的子项来渲染它的当前值。
+
+```jsx
+const count = useMotionValue(0)
+const rounded = useTransform(count, latest => Math.round(latest))
+
+useEffect(() => {
+  const controls = animate(count, 100)
+
+  return controls.stop
+}, [])
+
+return <motion.div>{rounded}</motion.div>
+```
+
+[示例](https://codesandbox.io/s/framer-motion-animate-content-bxx7lt?from-embed) 
+
+
+## 硬件加速的动画
+
+浏览器能够使用CSS或Web Animations API（WAAPI）通过GPU运行一些动画。
+
+在GPU上运行动画可以实现更流畅的性能，特别是在主JavaScript线程变得繁忙的情况下。GPU动画也更节能，从而降低电池的使用率。
+
+然而，与Framer Motion的JavaScript动画相比，本地浏览器动画API提供的功能较少。因此，Motion的混合引擎可以智能地决定动画何时可以安全地在GPU上运行
+，而在需要额外功能的时候，则回落到JavaScript动画上。
+
+它甚至还做了一些工作，以确保支持那些传统上不能在GPU上运行的功能，如弹簧动画、自定义缓和函数、速度转移和动画中断。
+
+
+### 支持的数值
+
+目前，只有`opacity`动画有资格使用硬件加速，将来会有更多的动画。
+
+### 不支持的功能
+
+支持的值将始终使用硬件加速的动画，除非。
+
+- motion组件有prop:onUpdate。
+- 该值是通过style作为动作值传入的。
+- repeatDelay被设置。
+- repeatType被设置为 "mirror"。
+- `repeatType`被设置为0。
+
+随着硬件加速动画工作的进展，这个选择列表将会减少。
+

@@ -1,0 +1,161 @@
+# Scroll animations
+
+如何在Framer Motion中创建滚动链接的和滚动触发的动画。
+
+有两种主要的滚动动画，这两种动画都可以用Framer Motion实现。
+
+Scroll-linked动画是指动画的进度与滚动的进度直接挂钩。`scroll-triggered`动画是指当一个元素进入或离开视口时触发一个正常的动画。
+
+## Scroll-linked animations
+
+滚动链接的动画是使用运动值和useScroll钩子创建的。
+
+```jsx
+import { motion, useScroll } from "framer-motion"
+
+function Component() {
+  const { scrollYProgress } = useScroll();
+  
+  return (
+    <motion.div style={{ scaleX: scrollYProgress }} />  
+  )
+}
+```
+
+[示例](https://codesandbox.io/s/framer-motion-usescroll-xwdxbt?from-embed)
+
+阅读完整的[useScroll文档](https://www.framer.com/docs/use-scroll/)，了解如何跟踪元素滚动、元素在视口中的位置、创建视差效果等等。
+
+
+## Scroll-triggered animations
+
+滚动触发的动画是正常的动画，当一个元素进入或离开视口时开始。
+
+whileInView道具可以用来创建滚动触发的动画，通过定义一组属性和可选的过渡，当元素处于视图中时，就可以制作动画。
+
+
+```jsx
+<motion.div
+  initial={{ opacity: 0 }}
+  whileInView={{ opacity: 1 }}
+/>
+```
+
+**注意**：目前在Chrome中存在一个错误，即IntersectionObserver不能正确地与SVG元素一起工作。
+
+### whileInView:变体标签 | 目标和过渡
+
+当元素处于视图中时，要动画化的属性或变体标签。
+
+### viewport:视口选项
+
+一个定义如何检测视口的视口选项的对象。
+
+```jsx
+<motion.div
+  initial="hidden"
+  whileInView="visible"
+  viewport={{ once: true }}
+/>
+```
+
+### onViewportEnter(entry): void
+
+当元素进入视口时触发的回调。提供交叉事件细节的IntersectionObserverEntry，如果浏览器不支持IntersectionObserver，则为空。
+
+### onViewportLeave(entry): void
+
+当元素离开视口时触发的回调。为IntersectionObserverEntry提供相交事件的细节。如果浏览器不支持IntersectionObserver，将永远不会被调用。
+
+
+### 视口选项
+
+### #once: boolean
+
+如果为真，一旦该元素进入视口，它将保持在whileInView状态。将不会再触发视口回调。
+
+```jsx
+<motion.div
+  initial="hidden"
+  whileInView="visible"
+  viewport={{ once: true }}
+/>
+```
+
+### `Root:RefObject<Element>`
+
+默认情况下，当元素进入窗口视口时，它将被视为在视口内。
+
+传递一个Ref给祖先元素和viewport.root，以使用该祖先元素作为测量视口。
+
+```jsx {5,9}
+function Component() {
+  const scrollRef = useRef(null)
+  
+  return (
+    <div ref={scrollRef} style={{ overflow: "scroll" }}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ root: scrollRef }}
+      />
+    </div>
+  )
+}
+```
+
+### margin: string
+
+当检测元素是否进入视口时，要在视口中增加一个空白。
+
+默认为 "0px"。一个单一的值可以用来在每一侧添加一个边距，例如 "200px"。或者，可以定义多个值，
+按照上/右/下/左的顺序给每个轴分配一个边距，例如 `0px -20px 0px 100px`
+
+### amount: "some" | "all" | number
+
+默认为 "some"，该选项定义了元素与视口相交的部分，以使其被视为在视口内。
+
+### fallback: boolean
+
+Framer Motion使用IntersectionObserver来检测视口进入/退出。如果IntersectionObserver在当前浏览器中不可用，onViewportEnter将被触发
+，而whileInView将在组件首次安装时被设置。
+
+通过设置fallback: false，这一行为将被禁用。没有视口事件会被触发，whileInView也不会被设置。
+
+## 使用示例
+
+[官网地址](https://www.framer.com/motion/scroll-animations/#example)
+
+
+### Page scroll progress
+
+[Page scroll progress](https://codesandbox.io/s/framer-motion-usescroll-xwdxbt?from-embed)
+
+### useScroll with spring smoothing
+
+[useScroll with spring smoothing](https://codesandbox.io/s/framer-motion-usescroll-with-spring-smoothing-75rw1l?from-embed)
+
+### Element scroll progress
+
+[Element scroll progress](https://codesandbox.io/s/framer-motion-usescroll-element-scrolling-eg6fm3?from-embed)
+
+### Track element position
+
+[Track element position](https://codesandbox.io/s/framer-motion-track-element-position-wnzctr?from-embed)
+
+### Parallax
+
+[Parallax](https://codesandbox.io/s/framer-motion-parallax-i9gwuc?from-embed)
+
+
+### 3D
+
+[3D](https://codesandbox.io/s/framer-motion-3d-usescroll-xibe0t?from-embed)
+
+### Scroll velocity
+
+[滚动速度](https://codesandbox.io/s/framer-motion-scroll-velocity-r1dy4u?from-embed)
+
+
+
+

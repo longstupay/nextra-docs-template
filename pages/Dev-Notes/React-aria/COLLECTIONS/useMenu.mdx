@@ -1,0 +1,87 @@
+# useMenu
+
+## 简介
+
+为一个菜单组件提供行为和可访问性实现。一个菜单显示一个用户可以选择的行动或选项的列表。
+
+```js
+install	yarn add react-aria
+version	3.22.0
+usage	import {useMenuTrigger, useMenu, useMenuItem, useMenuSection} from 'react-aria'
+----------------------
+install pnpm add @react-aria/menu
+version 3.7.1
+usage  import {useMenuTrigger, useMenu, useMenuItem, useMenuSection} from '@react-aria/menu'
+```
+
+
+# API
+
+```js
+useMenuTrigger<T>(
+  props: AriaMenuTriggerProps,
+  state: MenuTriggerState,
+  ref: RefObject<Element>
+): MenuTriggerAria<T>
+
+useMenu<T>(
+  props: AriaMenuOptions<T>,
+  state: TreeState<T>,
+  ref: RefObject<HTMLElement>
+): MenuAria
+
+useMenuItem<T>(
+  props: AriaMenuItemProps,
+  state: TreeState<T>,
+  ref: RefObject<FocusableElement>
+): MenuItemAria
+
+useMenuSection(props: AriaMenuSectionProps): MenuSectionAria
+
+```
+
+## 功能
+
+
+在HTML中没有广泛支持的原生元素来实现菜单。 useMenuTrigger和useMenu有助于实现可访问的菜单组件，可以根据需要进行样式设计。
+
+### 功能特点
+
+- 作为一个带有菜单的按钮，使用ARIA暴露给辅助技术
+- 支持单选、多选或不选
+- 支持disable items
+- 支持section
+- 支持复杂的项目标签以实现无障碍性
+- 支持键盘导航，包括方向键、原点/终点、向上/向下翻页
+- 键盘导航时支持自动滚动
+- 键盘支持使用方向键打开菜单，包括相应地自动聚焦第一个或最后一个项目
+- 键入前台，允许通过键入文本聚焦项目
+- 虚拟化滚动支持，以提高长列表的性能
+
+
+## 功能拆解
+
+菜单触发器由一个按钮或其他触发元素与一个弹出式菜单结合而成，里面有一个菜单项或组的列表。 useMenuTrigger、useMenu、useMenuItem
+和useMenuSection处理使用ARIA将其暴露给辅助技术，同时处理键盘、鼠标和交互以支持选择和聚焦行为。
+
+#### useMenuTrigger
+
+返回道具，你应该将其传播到适当的元素上。
+
+ | Name        | Type         |         描述 |
+| :------------ | :---------: | ----------: |
+| menuTriggerProps      |   AriaButtonProps  | 菜单触发ele |
+| menuProps     |  AriaMenuOptions`<T>`  |   菜单ele |
+
+### useMenu
+
+返回你应该传播到菜单容器元素上的道具。
+
+ | Name        | Type         |         描述 |
+| :------------ | :---------: | ----------: |
+| menuProps        |    DoM属性   | 菜单ele |
+
+
+### useMenuItem
+
+返回单个项目及其子项的道具

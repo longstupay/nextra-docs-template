@@ -1,0 +1,27 @@
+# useOverlayTrigger
+
+## 简介
+
+处理覆载触发器的行为和可访问性，例如，打开一个弹出窗口、菜单或其他覆载的按钮，其位置与触发器相对。
+
+## API
+
+```js
+useOverlayTrigger(
+  props: OverlayTriggerProps,
+  state: OverlayTriggerState,
+  ref: RefObject<Element>
+): OverlayTriggerAria
+
+```
+
+## 功能
+
+在HTML中没有内置的方法来创建弹出窗口或其他类型的覆盖。 useOverlayTrigger与useOverlayPosition相结合，有助于实现可访问的覆盖，可以根据需要进行样式设计。
+
+注意：useOverlayTrigger只处理覆盖层本身。它应该与useDialog结合，以创建完全无障碍的弹出窗口。对于菜单，请参阅useMenu，它建立在useOverlayTrigger的基础上，并提供针对菜单的额外功能。
+
+暴露覆盖触发器，用ARIA将触发器与覆盖物连接起来
+当与useOverlayPosition结合时，使覆盖物相对于触发器的位置。
+当与useModal结合时，将覆盖层后面的内容隐藏起来，不让屏幕阅读器看到。
+当与useOverlay结合时，处理在外部互动并按下Escape键时关闭覆盖层的问题
